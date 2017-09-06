@@ -45,14 +45,16 @@ class simp::yum::schedule (
     default => 'absent'
   }
 
-  cron { 'simp_yum_update':
-    ensure   => $_ensure,
-    command  => template('simp/yum-cron.erb'),
-    user     => 'root',
-    minute   => $minute,
-    hour     => $hour,
-    monthday => $monthday,
-    month    => $month,
-    weekday  => $weekday
+  if $facts['os']['name'] in ['RedHat','CentOS'] {
+    cron { 'simp_yum_update':
+      ensure   => $_ensure,
+      command  => template('simp/yum-cron.erb'),
+      user     => 'root',
+      minute   => $minute,
+      hour     => $hour,
+      monthday => $monthday,
+      month    => $month,
+      weekday  => $weekday
+    }
   }
 }
