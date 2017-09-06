@@ -25,6 +25,16 @@ class simp::root_user (
   }
 
   if $manage_user {
+    if $facts['os']['name'] in ['RedHat','CentOS'] {
+      $_groups = [ 'bin', 'daemon', 'sys', 'adm', 'disk', 'wheel' ]
+    }
+    elsif $facts['os']['name'] in ['Debian','Ubuntu'] {
+      $_groups = [ 'bin', 'daemon', 'sys', 'adm', 'disk' ]
+    }
+    else {
+      fail("OS '${facts['os']['name']}' not supported by '${module_name}'")
+    }
+
     user { 'root':
       ensure     => 'present',
       uid        => '0',
@@ -32,7 +42,7 @@ class simp::root_user (
       allowdupe  => false,
       home       => '/root',
       shell      => '/bin/bash',
-      groups     => [ 'bin', 'daemon', 'sys', 'adm', 'disk', 'wheel' ],
+      groups     => $_groups,
       membership => 'minimum',
       forcelocal => true
     }

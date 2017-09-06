@@ -28,6 +28,9 @@ function simp::yum::repo::gpgkeys::simp() {
       default =>  $_os_rel_gpgkeys
     }
   }
+  elsif $facts['os']['name'] in ['Debian','Ubuntu'] {
+    # Don't fail on Debian/Ubuntu because of this
+  }
   else { fail("There are no Yumrepo GPG keys for OS '${facts['os']['name']}'") }
 
   concat( $_simp_gpgkeys, $_full_os_gpgkeys )

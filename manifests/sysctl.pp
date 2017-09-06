@@ -148,7 +148,7 @@ class simp::sysctl (
   validate_sysctl_value('kernel.core_pattern',$kernel__core_pattern)
 
   case $::operatingsystem {
-    'RedHat','CentOS': {
+    'RedHat','CentOS','Debian','Ubuntu': {
       # Performance Related Settings
       sysctl {
         'net.unix.max_dgram_qlen'           : value => $net__unix__max_dgram_qlen;
@@ -261,7 +261,7 @@ class simp::sysctl (
       }
     }
     default : {
-      fail('Only RedHat and CentOS are currently supported by "simp::sysctl"')
+      fail("${facts['os']['name']} is not yet supported by ${module_name}")
     }
   }
 }

@@ -29,26 +29,56 @@ class simp::base_apps (
   Boolean                   $manage_elinks_config = true
 ) {
 
-  $core_apps = [
-    'dos2unix',
-    'elinks',
-    'hunspell',
-    'lsof',
-    'man',
-    'man-pages',
-    'mlocate',
-    'pax',
-    'pinfo',
-    'sos',
-    'star',
-    'symlinks',
-    'vim-enhanced',
-    'words',
-    'x86info',
-    'irqbalance',
-    'netlabel_tools',
-    'bind-utils'
-  ]
+  if $facts['os']['name'] in ['RedHat','CentOS'] {
+    $_elinks_conf = '/etc/elinks.conf'
+    $core_apps = [
+      'dos2unix',
+      'elinks',
+      'hunspell',
+      'lsof',
+      'man',
+      'man-pages',
+      'mlocate',
+      'pax',
+      'pinfo',
+      'sos',
+      'star',
+      'symlinks',
+      'vim-enhanced',
+      'words',
+      'x86info',
+      'irqbalance',
+      'netlabel_tools',
+      'bind-utils'
+    ]
+  }
+  elsif $facts['os']['name'] in ['Debian','Ubuntu'] {
+    $_elinks_conf = '/etc/elinks/elinks.conf'
+    $core_apps = [
+      'dnsutils',
+      'bind9-host',
+      'bridge-utils',
+      'dos2unix',
+      'elinks',
+      'hunspell',
+      'lsof',
+      'man-db',
+      'manpages',
+      'mlocate',
+      'pax',
+      'pinfo',
+      'sosreport',
+      # 'star', not available from Debian repositories
+      'symlinks',
+      'vim',
+      'wamerican',
+      'x86info',
+      'irqbalance'
+    ]
+  }
+  else {
+    fail("OS '${facts['os']['name']}' not supported by '${module_name}'")
+  }
   $apps = $extra_apps ? {
     Array   => $core_apps + $extra_apps,
     default => $core_apps
@@ -61,12 +91,14 @@ class simp::base_apps (
     hasstatus  => false,
     require    => Package['irqbalance']
   }
-  service { 'netlabel':
-    ensure     => 'running',
-    enable     => true,
-    hasrestart => true,
-    hasstatus  => true,
-    require    => Package['netlabel_tools']
+  if $facts['os']['name'] in ['RedHat','CentOS'] {
+    service { 'netlabel':
+      ensure     => 'running',
+      enable     => true,
+      hasrestart => true,
+      hasstatus  => true,
+      require    => Package['netlabel_tools']
+    }
   }
 
   case $facts['os']['name'] {
@@ -114,13 +146,38 @@ class simp::base_apps (
         }
       }
     }
+    'Debian','Ubuntu': {
+      package { 'quota': ensure => $ensure }
+
+      svckill::ignore { 'acpid': }
+      svckill::ignore { 'bootlogs': }
+      svckill::ignore { 'console-setup': }
+      svckill::ignore { 'dbus': }
+      svckill::ignore { 'getty@': }
+      svckill::ignore { 'hwclock-save': }
+      svckill::ignore { 'kbd': }
+      svckill::ignore { 'keyboard-setup': }
+      svckill::ignore { 'kmod': }
+      svckill::ignore { 'motd': }
+      svckill::ignore { 'networking': }
+      svckill::ignore { 'procps': }
+      svckill::ignore { 'quota': }
+      svckill::ignore { 'quotarpc': }
+      svckill::ignore { 'rc.local': }
+      svckill::ignore { 'restorecond': }
+      svckill::ignore { 'rmnologin': }
+      svckill::ignore { 'selinux-basics': }
+      svckill::ignore { 'udev': }
+      svckill::ignore { 'udev-finish': }
+      svckill::ignore { 'urandom': }
+    }
     default: {
       fail("${facts['os']['name']} is not yet supported by ${module_name}")
     }
   }
 
   if $manage_elinks_config {
-    file { '/etc/elinks.conf':
+    file { $_elinks_conf:
       owner   => 'root',
       group   => 'root',
       mode    => '0644',
@@ -128,15 +185,15 @@ class simp::base_apps (
     }
 
     file_line { 'elinks_ui_lang':
-      path    => '/etc/elinks.conf',
+      path    => $_elinks_conf,
       line    => 'set ui.language = "System"',
-      require => File['/etc/elinks.conf']
+      require => File[$_elinks_conf]
     }
 
     file_line { 'elinks_css_disable':
-      path    => '/etc/elinks.conf',
+      path    => $_elinks_conf,
       line    => 'set document.css.enable = 0',
-      require => File['/etc/elinks.conf']
+      require => File[$_elinks_conf]
     }
   }
 }
